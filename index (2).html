@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merchant Ops · Portfolio Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#07090f;--s1:#0d1119;--s2:#141a27;--s3:#1b2234;
+  --b1:rgba(255,255,255,0.055);--b2:rgba(255,255,255,0.1);--b3:rgba(255,255,255,0.17);
+  --t1:#e4e9f5;--t2:#7a85a0;--t3:#384055;
+  --blue:#4d8ef0;--blue-d:rgba(77,142,240,0.13);
+  --green:#2bc97a;--green-d:rgba(43,201,122,0.13);
+  --red:#f05050;--red-d:rgba(240,80,80,0.13);
+  --amber:#f0a828;--amber-d:rgba(240,168,40,0.13);
+  --purple:#9b78f5;--purple-d:rgba(155,120,245,0.13);
+  --teal:#22d3c8;--teal-d:rgba(34,211,200,0.13);
+  --coral:#f07050;--coral-d:rgba(240,112,80,0.13);
+  --r:9px;--rl:13px;--font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*,::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);font-size:14px;line-height:1.55;min-height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--b3);border-radius:8px}
+.shell{max-width:1360px;margin:0 auto;padding:26px 28px 72px}
+/* HEADER */
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--b1)}
+.hdr-eye{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
+.hdr-title{font-size:24px;font-weight:600;color:var(--t1);letter-spacing:-.025em;line-height:1.2}
+.hdr-sub{font-size:12.5px;color:var(--t2);margin-top:3px}
+.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding-top:2px}
+.pill{font-size:11px;font-family:var(--mono);padding:4px 12px;border-radius:20px;background:var(--s2);border:1px solid var(--b2);color:var(--t2)}
+.live{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--green);font-weight:500}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+/* FILTER BAR */
+.fbar{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);padding:10px 14px;margin-bottom:18px;flex-wrap:wrap}
+.fbar-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-right:2px}
+.fsel{font-family:var(--font);font-size:12.5px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:6px 10px;color:var(--t1);outline:none;cursor:pointer;transition:border-color .15s;min-width:140px}
+.fsel:focus{border-color:var(--blue)}
+.fsel option{background:var(--s2)}
+.fbar-sep{width:1px;height:20px;background:var(--b2)}
+.fbtn{font-family:var(--font);font-size:12px;font-weight:500;padding:6px 14px;border-radius:var(--r);border:1px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .15s}
+.fbtn:hover{border-color:var(--b3);color:var(--t1)}
+.fbtn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.fbtn.primary:hover{opacity:.9}
+.factive{font-size:11px;font-family:var(--mono);background:var(--blue-d);color:var(--blue);border:1px solid rgba(77,142,240,.25);border-radius:20px;padding:3px 10px;display:none}
+.factive.on{display:inline-flex;align-items:center;gap:5px}
+/* NAV */
+.nav{display:flex;gap:4px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);padding:4px;width:fit-content;margin-bottom:22px}
+.nb{font-family:var(--font);font-size:13px;font-weight:500;padding:8px 20px;border-radius:10px;border:none;background:transparent;color:var(--t2);cursor:pointer;transition:all .18s}
+.nb:hover{color:var(--t1);background:var(--s2)}
+.nb.on{background:var(--blue);color:#fff;box-shadow:0 2px 16px rgba(77,142,240,.3)}
+/* PAGE */
+.pg{display:none}.pg.on{display:block;animation:fup .2s ease}
+@keyframes fup{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+/* KPI */
+.krow{display:grid;gap:10px;margin-bottom:16px}
+.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.k3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kpi{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;transition:border-color .18s,transform .2s}
+.kpi:hover{border-color:var(--b2);transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ac,var(--blue))}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--t3);margin-bottom:6px}
+.kpi-val{font-size:20px;font-weight:600;font-family:var(--mono);color:var(--t1);letter-spacing:-.03em;line-height:1}
+.kpi-d{font-size:10.5px;font-family:var(--mono);margin-top:5px}
+.up{color:var(--green)}.dn{color:var(--red)}.neu{color:var(--t3)}
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);padding:18px 20px;margin-bottom:14px;transition:border-color .18s}
+.card:hover{border-color:var(--b2)}
+.ct{font-size:13px;font-weight:500;color:var(--t2);margin-bottom:13px;display:flex;align-items:center;gap:8px}
+.bar{width:3px;height:12px;background:var(--blue);border-radius:2px;flex-shrink:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.row2 .card{margin-bottom:0}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.row3 .card{margin-bottom:0}
+/* TABLE */
+.tw{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dt th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);border-bottom:1px solid var(--b1);background:var(--s2);white-space:nowrap;cursor:pointer;user-select:none}
+table.dt th:hover{color:var(--t1)}
+table.dt th.sa::after{content:' ↑';color:var(--blue)}
+table.dt th.sd::after{content:' ↓';color:var(--blue)}
+table.dt td{padding:8px 12px;color:var(--t1);border-bottom:1px solid var(--b1);white-space:nowrap}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:var(--s2)}
+.mono{font-family:var(--mono);font-size:12px}
+.fw{font-weight:500}
+.rnk{font-family:var(--mono);font-size:11px;color:var(--t3)}
+/* BADGES */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--mono)}
+.br{background:var(--red-d);color:var(--red)}.ba{background:var(--amber-d);color:var(--amber)}.bg{background:var(--green-d);color:var(--green)}.bb{background:var(--blue-d);color:var(--blue)}.bp{background:var(--purple-d);color:var(--purple)}
+/* LEGEND */
+.leg{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:11px}
+.li{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--t2)}
+.ls{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+/* NSM CARDS */
+.nsm5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.nc{background:var(--s1);border:1px solid var(--b1);border-radius:var(--rl);padding:15px 16px;border-top:3px solid transparent;transition:border-color .18s,transform .2s}
+.nc:hover{border-color:var(--b2);transform:translateY(-2px)}
+.nm{font-size:12.5px;font-weight:600;color:var(--t1);margin-bottom:11px;line-height:1.3}
+.ns{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--b1)}
+.ns:last-child{border-bottom:none}
+.nsl{font-size:10.5px;color:var(--t3)}
+.nsv{font-size:11.5px;font-weight:500;font-family:var(--mono);color:var(--t1)}
+/* BROADCAST BAR */
+.bpbar{display:flex;align-items:center;gap:7px}
+.bp-bg{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden;min-width:40px}
+.bp-fill{height:100%;border-radius:3px}
+/* SEARCH */
+.srow{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.srow input{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:7px 13px;font-family:var(--font);font-size:13px;color:var(--t1);outline:none;transition:border-color .15s}
+.srow input::placeholder{color:var(--t3)}
+.srow input:focus{border-color:var(--blue)}
+.stag{font-size:11px;font-family:var(--mono);color:var(--t3);background:var(--s2);border:1px solid var(--b1);border-radius:20px;padding:3px 10px}
+/* INSIGHT */
+.ins{background:var(--blue-d);border:1px solid rgba(77,142,240,.22);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--t2);margin-bottom:14px;line-height:1.65}
+.ins strong{color:var(--blue)}
+/* DIVIDER */
+.dvd{height:1px;background:var(--b1);margin:24px 0 18px;position:relative}
+.dvd-lbl{position:absolute;top:50%;left:0;transform:translateY(-50%);background:var(--bg);padding-right:12px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--t3)}
+/* FOOTER */
+.ftr{margin-top:36px;padding-top:16px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
+.ftr-l{font-size:12px;color:var(--t3)}.ftr-r{font-size:11px;color:var(--t3);font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div>
+    <div class="hdr-eye">Merchant Device · Operations Intelligence</div>
+    <div class="hdr-title">Merchant Device Operations Dashboard</div>
+    <div class="hdr-sub">Region-wise SO / SB Growth · AOP View · FY Apr 2025 – Mar 2026</div>
+  </div>
+  <div class="hdr-r">
+    <div class="live"><div class="dot"></div>MTD Mar 2026</div>
+    <div class="pill">FY Apr-25 → Mar-26 · 12 months + LMTD/MTD</div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="fbar">
+  <span class="fbar-label">Filter</span>
+  <select class="fsel" id="f-zone" onchange="applyFilter()">
+    <option value="all">All Zones</option>
+    <option>central</option><option>ncr</option><option>up_west</option><option>east_2</option>
+    <option>ap_ts_hyd</option><option>up_east</option><option>west_3</option><option>blr_rok</option>
+    <option>upper_north_1</option><option>east_1</option><option>west_1</option><option>gujarat_1</option>
+    <option>tn_west</option><option>kerala</option><option>west_2</option><option>upper_north_2</option>
+    <option>chennai</option><option>tn_south</option><option>west_4</option><option>gujarat_2</option>
+    <option>north_east</option><option>goa</option>
+  </select>
+  <select class="fsel" id="f-state" onchange="applyFilter()">
+    <option value="all">All States</option>
+    <option>Rajasthan</option><option>UP East</option><option>UP West</option><option>M.P.</option>
+    <option>Delhi</option><option>Bihar</option><option>West Bengal</option><option>Tamil Nadu</option>
+    <option>Gujarat</option><option>A.P.</option><option>Punjab</option><option>Bengaluru</option>
+    <option>Maha (ROK)</option><option>Mumbai</option><option>Kerala</option>
+  </select>
+  <select class="fsel" id="f-city" onchange="applyFilter()">
+    <option value="all">All Cities</option>
+    <option>New Delhi</option><option>Bengaluru</option><option>Hyderabad</option><option>Mumbai</option>
+    <option>Jaipur</option><option>Chennai</option><option>Ahmedabad</option><option>Pune</option>
+    <option>Ghaziabad</option><option>Lucknow</option><option>Gurugram</option><option>Noida</option>
+    <option>Surat</option><option>Indore</option><option>Patna</option>
+  </select>
+  <select class="fsel" id="f-nsm" onchange="applyFilter()">
+    <option value="all">All NSMs</option>
+    <option>Arjun Mehta</option><option>Priya Singh</option>
+    <option>Ravi Kumar</option><option>Neha Patel</option><option>Suresh Nair</option>
+  </select>
+  <select class="fsel" id="f-rm" onchange="applyFilter()">
+    <option value="all">All RMs</option>
+    <option>Rahul Verma</option><option>Amit Sharma</option><option>Sunita Rao</option>
+    <option>Vikas Tiwari</option><option>Pooja Iyer</option><option>Manoj Dubey</option>
+    <option>Kavitha Reddy</option><option>Dinesh Joshi</option><option>Sanjay Patil</option>
+    <option>Anuradha Singh</option><option>Sunil Krishna</option><option>Venkat Rao</option>
+    <option>Nitin Kulkarni</option><option>Divya Menon</option><option>Prasad Naidu</option>
+    <option>Anil Bisht</option><option>Lakshmi Swamy</option>
+  </select>
+  <div class="fbar-sep"></div>
+  <button class="fbtn" onclick="clearFilter()">✕ Reset</button>
+  <span class="factive" id="factive-badge"></span>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nb on" onclick="go('s',this)">Summary</button>
+  <button class="nb" onclick="go('g',this)">Region Wise Analysis</button>
+  <button class="nb" onclick="go('p',this)">Manager Wise Analysis</button>
+</div>
+
+<!-- ══════════════ SUMMARY ══════════════ -->
+<div id="ps" class="pg on">
+  <div class="krow k6" id="kpi-row">
+    <div class="kpi" style="--ac:var(--blue)"><div class="kpi-lbl">Active Merchants</div><div class="kpi-val" id="k-active">75.84L</div><div class="kpi-d up" id="k-active-d">▲ +2.0% vs LMTD</div></div>
+    <div class="kpi" style="--ac:var(--purple)"><div class="kpi-lbl">Device Bind Count</div><div class="kpi-val" id="k-bind">1.557Cr</div><div class="kpi-d up">▲ +2.5% vs LMTD</div></div>
+    <div class="kpi" style="--ac:var(--red)"><div class="kpi-lbl">MTD Churn</div><div class="kpi-val" id="k-churn">6.67L</div><div class="kpi-d up" id="k-churn-d">▼ −3.9% vs LMTD</div></div>
+    <div class="kpi" style="--ac:var(--green)"><div class="kpi-lbl">MTD Winback</div><div class="kpi-val" id="k-wb">3.85L</div><div class="kpi-d dn">▼ −5.6% vs LMTD</div></div>
+    <div class="kpi" style="--ac:var(--teal)"><div class="kpi-lbl">Devices Deployed</div><div class="kpi-val" id="k-dev">5.05L</div><div class="kpi-d up">▲ +11.4% vs LMTD</div></div>
+    <div class="kpi" style="--ac:var(--amber)"><div class="kpi-lbl">Broadcast Success</div><div class="kpi-val" id="k-bc">83.1%</div><div class="kpi-d dn" id="k-bc-d">▼ −1.1pp vs LMTD (84.2%)</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct"><div class="bar"></div>Active merchants · churn · winback — monthly trend (Apr 25 – Mar 26)</div>
+    <div class="leg">
+      <div class="li"><div class="ls" style="background:var(--blue)"></div>Active (left axis)</div>
+      <div class="li"><div class="ls" style="background:var(--red)"></div>Churn (right axis)</div>
+      <div class="li"><div class="ls" style="background:var(--green)"></div>Winback (right axis)</div>
+    </div>
+    <div style="position:relative;width:100%;height:240px"><canvas id="c1"></canvas></div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--amber)"></div>Broadcast success % &amp; 50%+ fail merchants — monthly</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--amber)"></div>Broadcast success % (left)</div>
+        <div class="li"><div class="ls" style="background:var(--coral)"></div>50%+ fail merchants % (right)</div>
+      </div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="c-bc"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--purple)"></div>Device deployments — monthly</div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="c2"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--teal)"></div>Deployed merchants — active vs inactive (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--green)"></div>Txn Active post-deploy (4.74L)</div>
+        <div class="li"><div class="ls" style="background:var(--red)"></div>Txn Inactive post-deploy (0.10L)</div>
+        <div class="li"><div class="ls" style="background:var(--t3)"></div>Pending activation (0.21L)</div>
+      </div>
+      <div style="position:relative;width:100%;height:210px"><canvas id="c-pie1"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--coral)"></div>Device deactivations — by merchant txn status (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--amber)"></div>Was txn Active before deactivation</div>
+        <div class="li"><div class="ls" style="background:var(--t3)"></div>Was txn Inactive before deactivation</div>
+      </div>
+      <div style="position:relative;width:100%;height:210px"><canvas id="c-pie2"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ REGION WISE ANALYSIS ══════════════ -->
+<div id="pg" class="pg">
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--green)"></div>Winback count by state — top 15 (MTD)</div>
+      <div style="position:relative;width:100%;height:310px"><canvas id="g1"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--teal)"></div>Deployment activation efficiency by zone (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--green)"></div>≥ 96% excellent</div>
+        <div class="li"><div class="ls" style="background:var(--blue)"></div>90–96% good</div>
+        <div class="li"><div class="ls" style="background:var(--red)"></div>&lt; 90% needs attention</div>
+      </div>
+      <div style="position:relative;width:100%;height:275px"><canvas id="g2"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--amber)"></div>Broadcast success rate by zone — all 22 zones (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--green)"></div>≥ 90% good</div>
+        <div class="li"><div class="ls" style="background:var(--amber)"></div>80–90% fair</div>
+        <div class="li"><div class="ls" style="background:var(--red)"></div>&lt; 80% poor</div>
+      </div>
+      <div style="position:relative;width:100%;height:310px"><canvas id="g3"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--purple)"></div>Device upgrade rate by zone — upgrades per active (MTD)</div>
+      <div style="position:relative;width:100%;height:310px"><canvas id="g4"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--blue)"></div>Active merchants by city — top 15 (MTD)</div>
+      <div style="position:relative;width:100%;height:270px"><canvas id="g5"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--amber)"></div>Broadcast success rate by city — top 15 (MTD)</div>
+      <div style="position:relative;width:100%;height:270px"><canvas id="g6"></canvas></div>
+    </div>
+  </div>
+
+  <div class="dvd"><span class="dvd-lbl">Zone scorecard</span></div>
+  <div class="card">
+    <div class="ct"><div class="bar"></div>Zone performance — all metrics scorecard <span style="margin-left:auto;font-size:11px;color:var(--t3)">click any column to sort</span></div>
+    <div class="tw"><table class="dt" id="ztbl">
+      <thead><tr>
+        <th>#</th><th data-col="zone">Zone</th><th data-col="active">Active</th><th data-col="bind">Bind</th>
+        <th data-col="winback">Winback</th><th data-col="wr">Winback %</th><th data-col="churn">Churn</th>
+        <th data-col="cr">Churn %</th><th data-col="device">Devices</th><th data-col="ae">Act. Eff.</th>
+        <th data-col="bc_pct">Broadcast %</th><th data-col="bc50">50%+ Fail</th>
+      </tr></thead>
+      <tbody id="ztb"></tbody>
+    </table></div>
+  </div>
+
+  <div class="dvd"><span class="dvd-lbl">City scorecard</span></div>
+  <div class="card">
+    <div class="ct"><div class="bar"></div>City performance — top 15 (MTD) <span style="margin-left:auto;font-size:11px;color:var(--t3)">click any column to sort</span></div>
+    <div class="tw"><table class="dt" id="ctbl">
+      <thead><tr>
+        <th>#</th><th data-col="city">City</th><th data-col="active">Active</th><th data-col="bind">Bind</th>
+        <th data-col="winback">Winback</th><th data-col="churn">Churn</th><th data-col="cr">Churn %</th>
+        <th data-col="device">Devices</th><th data-col="bc_pct">Broadcast %</th><th data-col="bc50">50%+ Fail</th>
+      </tr></thead>
+      <tbody id="ctb"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════════ MANAGER WISE ANALYSIS ══════════════ -->
+<div id="pp" class="pg">
+  <div id="nc" class="nsm5"></div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar"></div>NSM active merchant trend — Apr 25 to Mar 26</div>
+      <div class="leg" id="nsm-leg"></div>
+      <div style="position:relative;width:100%;height:215px"><canvas id="c6"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--red)"></div>NSM — churn % vs winback % (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--red)"></div>Churn %</div>
+        <div class="li"><div class="ls" style="background:var(--green)"></div>Winback %</div>
+      </div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="c8"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--amber)"></div>NSM — broadcast success % &amp; 50%+ fail (MTD)</div>
+      <div class="leg">
+        <div class="li"><div class="ls" style="background:var(--amber)"></div>Broadcast success %</div>
+        <div class="li"><div class="ls" style="background:var(--coral)"></div>50%+ fail merchants %</div>
+      </div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="c-nsm-bc"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><div class="bar" style="background:var(--purple)"></div>NSM share of total active merchants</div>
+      <div style="position:relative;width:100%;height:200px"><canvas id="c15"></canvas></div>
+    </div>
+  </div>
+
+  <div class="dvd"><span class="dvd-lbl">RM Leaderboard</span></div>
+  <div class="card">
+    <div class="ct"><div class="bar"></div>Top 20 RMs by active merchants (MTD) <span style="margin-left:auto;font-size:11px;color:var(--t3)">sort · search</span></div>
+    <div class="srow">
+      <input id="rm-q" type="text" placeholder="Search RM or NSM name…">
+      <span class="stag" id="rm-cnt">20 RMs</span>
+    </div>
+    <div class="tw"><table class="dt" id="rmtbl">
+      <thead><tr>
+        <th>#</th><th data-col="rm">RM Name</th><th data-col="nsm">NSM</th>
+        <th data-col="active">Active</th><th data-col="bind">Bind</th>
+        <th data-col="winback">Winback</th><th data-col="churn">Churn</th>
+        <th data-col="cr">Churn %</th><th data-col="wr">Winback %</th>
+        <th data-col="device">Devices</th><th data-col="upg">Upgrades</th>
+        <th data-col="bc_pct">Broadcast %</th>
+      </tr></thead>
+      <tbody id="rtb"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="ftr">
+  <div class="ftr-l">Merchant Device Operations Dashboard · Portfolio Project · Mar 2026</div>
+  <div class="ftr-r">19,013 records · FY Apr 25–Mar 26 · Broadcasting data simulated for illustration</div>
+</div>
+</div>
+
+<script>
+/* ════ DATA ════ */
+const months=['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'];
+const mA=[7434901,7329650,7243057,7094038,7052849,6909480,6651235,6503987,6237554,6007789,5781584,5816209];
+const mC=[693982,714734,728772,744494,665532,659348,663082,603182,616014,585276,751929,633155];
+const mW=[408383,402366,359313,389363,422418,388940,437598,498832,395754,410931,361199,504147];
+const mD=[452907,450846,601108,467026,459850,611438,435171,443577,513402,476564,424289,449222];
+const mBcPct=[85.2,84.8,83.1,80.5,81.2,83.0,84.1,83.5,82.3,83.0,84.2,83.1];
+const mBc50=[7.2,7.5,8.1,8.8,8.5,8.0,7.8,8.1,8.3,8.0,7.8,8.0];
+
+const nsmData=[
+  {name:'Arjun Mehta',  bind:4985038,active:2486455,winback:134110,churn:235126,device:182686,upgrades:83882,cr:9.5,wr:5.4,ae:93.6,bc_pct:82.1,bc50:9.2,col:'#4d8ef0',trend:[2431933,2390799,2368609,2308597,2291254,2235872,2130401,2075529,1983427,1900398,1816527,1848997]},
+  {name:'Priya Singh',  bind:3970091,active:2049651,winback:107848,churn:178007,device:140178,upgrades:78018,cr:8.7,wr:5.3,ae:94.2,bc_pct:84.3,bc50:8.6,col:'#2bc97a',trend:[1999170,1968227,1943566,1903144,1895206,1857713,1783215,1730542,1654343,1583913,1509315,1513992]},
+  {name:'Ravi Kumar',bind:3803187,active:1648560,winback:86726, churn:148322,device:96080, upgrades:67339,cr:9.0,wr:5.3,ae:94.4,bc_pct:80.8,bc50:9.8,col:'#9b78f5',trend:[1627258,1609186,1592949,1569241,1558924,1537151,1497499,1478716,1418778,1369773,1327253,1325685]},
+  {name:'Neha Patel',bind:1621405,active:769059,winback:34568,churn:60811,device:40807,upgrades:23465,cr:7.9,wr:4.5,ae:95.0,bc_pct:86.4,bc50:7.5,col:'#f0a828',trend:[760826,755499,745880,738244,741345,724799,699720,686576,661360,645552,632030,631713]},
+  {name:'Suresh Nair',    bind:1142140,active:606374, winback:21147, churn:41968, device:41217, upgrades:9970, cr:6.9,wr:3.5,ae:92.0,bc_pct:91.2,bc50:5.2,col:'#22d3c8',trend:[593476,585257,576740,562666,554149,542000,529035,521579,509081,497999,487006,486416]}
+];
+
+const zoneNSM={central:'Priya Singh',ncr:'Arjun Mehta',up_west:'Arjun Mehta',east_2:'Priya Singh',ap_ts_hyd:'Ravi Kumar',up_east:'Arjun Mehta',west_3:'Ravi Kumar',blr_rok:'Ravi Kumar',upper_north_1:'Arjun Mehta',east_1:'Arjun Mehta',west_1:'Neha Patel',gujarat_1:'Neha Patel',tn_west:'Suresh Nair',kerala:'Suresh Nair',west_2:'Ravi Kumar',upper_north_2:'Arjun Mehta',chennai:'Suresh Nair',tn_south:'Suresh Nair',west_4:'Ravi Kumar',gujarat_2:'Neha Patel',north_east:'Arjun Mehta',goa:'Ravi Kumar'};
+
+const zoneData=[
+  {zone:'central',      bind:2079966,active:1052482,winback:58764,churn:96623, device:67331,cr:9.2,wr:5.6,ae:96.0,bc_pct:82.0,bc50:9.5, upg_pct:4.6},
+  {zone:'ncr',          bind:1667052,active:751343, winback:48198,churn:73573, device:46747,cr:9.8,wr:6.4,ae:92.7,bc_pct:85.2,bc50:7.8, upg_pct:5.2},
+  {zone:'up_west',      bind:1247993,active:650326, winback:36223,churn:61689, device:48658,cr:9.5,wr:5.6,ae:92.2,bc_pct:78.8,bc50:11.2,upg_pct:3.6},
+  {zone:'east_2',       bind:1222067,active:624209, winback:30237,churn:52485, device:50842,cr:8.4,wr:4.8,ae:92.0,bc_pct:88.1,bc50:6.3, upg_pct:3.1},
+  {zone:'ap_ts_hyd',    bind:1406148,active:589517, winback:35036,churn:60988, device:40252,cr:10.3,wr:5.9,ae:93.6,bc_pct:76.3,bc50:13.1,upg_pct:5.0},
+  {zone:'up_east',      bind:1066156,active:530579, winback:23494,churn:46138, device:43794,cr:8.7,wr:4.4,ae:93.7,bc_pct:83.4,bc50:9.1, upg_pct:2.4},
+  {zone:'west_3',       bind:893041, active:452378, winback:20176,churn:35715, device:26931,cr:7.9,wr:4.5,ae:95.1,bc_pct:87.2,bc50:7.2, upg_pct:3.0},
+  {zone:'blr_rok',      bind:1069226,active:418921, winback:21659,churn:36141, device:17953,cr:8.6,wr:5.2,ae:94.8,bc_pct:91.0,bc50:5.1, upg_pct:3.9},
+  {zone:'upper_north_1',bind:668058, active:372960, winback:18847,churn:28899, device:22005,cr:7.7,wr:5.1,ae:93.9,bc_pct:84.3,bc50:8.4, upg_pct:2.8},
+  {zone:'east_1',       bind:595884, active:339242, winback:14403,churn:32435, device:29377,cr:9.6,wr:4.2,ae:95.6,bc_pct:80.1,bc50:10.8,upg_pct:1.4},
+  {zone:'west_1',       bind:687976, active:302024, winback:13737,churn:24962, device:16732,cr:8.3,wr:4.5,ae:93.5,bc_pct:89.2,bc50:6.0, upg_pct:3.0},
+  {zone:'gujarat_1',    bind:535810, active:267252, winback:12308,churn:20413, device:13852,cr:7.6,wr:4.6,ae:95.7,bc_pct:86.4,bc50:7.5, upg_pct:3.1},
+  {zone:'tn_west',      bind:396984, active:205714, winback:8017, churn:14785, device:13897,cr:7.2,wr:3.9,ae:94.3,bc_pct:90.3,bc50:5.5, upg_pct:2.1},
+  {zone:'kerala',       bind:290584, active:171419, winback:4570, churn:9851,  device:7150, cr:5.7,wr:2.7,ae:95.2,bc_pct:93.1,bc50:3.8, upg_pct:0.8},
+  {zone:'west_2',       bind:401360, active:167032, winback:9282, churn:14532, device:10222,cr:8.7,wr:5.6,ae:95.0,bc_pct:88.0,bc50:6.2, upg_pct:4.7},
+  {zone:'upper_north_2',bind:264979, active:132784, winback:9015, churn:14470, device:5386, cr:10.9,wr:6.8,ae:96.4,bc_pct:77.8,bc50:12.0,upg_pct:2.5},
+  {zone:'chennai',      bind:260387, active:123578, winback:4832, churn:9425,  device:9862, cr:7.6,wr:3.9,ae:86.9,bc_pct:91.2,bc50:4.9, upg_pct:2.1},
+  {zone:'tn_south',     bind:194185, active:105663, winback:3728, churn:7907,  device:10308,cr:7.5,wr:3.5,ae:91.5,bc_pct:89.1,bc50:5.8, upg_pct:1.6},
+  {zone:'west_4',       bind:194596, active:104709, winback:4443, churn:8818,  device:6474, cr:8.4,wr:4.2,ae:96.6,bc_pct:84.9,bc50:8.1, upg_pct:2.7},
+  {zone:'gujarat_2',    bind:203023, active:95074,  winback:4080, churn:6618,  device:3749, cr:7.0,wr:4.3,ae:96.2,bc_pct:87.3,bc50:6.9, upg_pct:3.2},
+  {zone:'north_east',   bind:142974, active:82181,  winback:2777, churn:6821,  device:8724, cr:8.3,wr:3.4,ae:98.0,bc_pct:76.8,bc50:12.5,upg_pct:0.8},
+  {zone:'goa',          bind:33412,  active:20712,  winback:573,  churn:946,   device:722,  cr:4.6,wr:2.8,ae:97.1,bc_pct:94.2,bc50:3.2, upg_pct:1.4}
+];
+
+const stateData=[
+  {s:'Rajasthan',active:592756,winback:33593,cr:9.2},{s:'UP East',active:530579,winback:23494,cr:8.7},
+  {s:'UP West',active:512898,winback:30152,cr:10.2},{s:'M.P.',active:459726,winback:25171,cr:9.2},
+  {s:'Delhi',active:367655,winback:23584,cr:9.6},{s:'Bihar',active:343061,winback:16206,cr:8.0},
+  {s:'West Bengal',active:339242,winback:14403,cr:9.6},{s:'Tamil Nadu',active:311377,winback:11745,cr:7.3},
+  {s:'Gujarat',active:267252,winback:12308,cr:7.6},{s:'A.P.',active:266185,winback:15122,cr:10.8},
+  {s:'Punjab',active:236191,winback:11801,cr:7.9},{s:'Bengaluru',active:208101,winback:12016,cr:8.8},
+  {s:'Maha (ROK)',active:200406,winback:8869,cr:8.4},{s:'Mumbai',active:180765,winback:7796,cr:7.9},
+  {s:'Kerala',active:171419,winback:4570,cr:5.7}
+];
+
+const cityData=[
+  {city:'New Delhi', active:367554,bind:799173,winback:23579,churn:35348,device:23856,cr:9.6,bc_pct:85.3,bc50:7.8, nsm:'Arjun Mehta'},
+  {city:'Bengaluru', active:186131,bind:490386,winback:10746,churn:16498,device:7760, cr:8.9,bc_pct:91.2,bc50:5.0, nsm:'Ravi Kumar'},
+  {city:'Hyderabad', active:162204,bind:414720,winback:10070,churn:15940,device:8445, cr:9.8,bc_pct:76.5,bc50:13.2,nsm:'Ravi Kumar'},
+  {city:'Mumbai',    active:121258,bind:297839,winback:5941, churn:10642,device:6062, cr:8.8,bc_pct:89.1,bc50:6.2, nsm:'Neha Patel'},
+  {city:'Jaipur',    active:104724,bind:218888,winback:6593, churn:9265, device:5461, cr:8.8,bc_pct:82.4,bc50:9.5, nsm:'Priya Singh'},
+  {city:'Chennai',   active:96116, bind:199579,winback:3697, churn:7342, device:7854, cr:7.6,bc_pct:91.0,bc50:4.8, nsm:'Suresh Nair'},
+  {city:'Ahmedabad', active:82303, bind:166889,winback:3876, churn:5973, device:3427, cr:7.3,bc_pct:86.8,bc50:7.1, nsm:'Neha Patel'},
+  {city:'Pune',      active:74489, bind:189361,winback:4429, churn:6477, device:4212, cr:8.7,bc_pct:88.3,bc50:6.5, nsm:'Ravi Kumar'},
+  {city:'Ghaziabad', active:64457, bind:136222,winback:3631, churn:5617, device:3346, cr:8.7,bc_pct:83.2,bc50:8.9, nsm:'Arjun Mehta'},
+  {city:'Lucknow',   active:63895, bind:142506,winback:3207, churn:6216, device:4113, cr:9.7,bc_pct:81.9,bc50:9.8, nsm:'Arjun Mehta'},
+  {city:'Gurugram',  active:62306, bind:152601,winback:4832, churn:6662, device:2966, cr:10.7,bc_pct:84.5,bc50:8.2,nsm:'Arjun Mehta'},
+  {city:'Noida',     active:55618, bind:136711,winback:3735, churn:7002, device:3631, cr:12.6,bc_pct:80.3,bc50:11.5,nsm:'Arjun Mehta'},
+  {city:'Surat',     active:52430, bind:112562,winback:2389, churn:3863, device:2168, cr:7.4,bc_pct:87.2,bc50:7.3, nsm:'Neha Patel'},
+  {city:'Indore',    active:51524, bind:109638,winback:3637, churn:4469, device:2452, cr:8.7,bc_pct:83.8,bc50:8.7, nsm:'Priya Singh'},
+  {city:'Patna',     active:44007, bind:84980, winback:2508, churn:4251, device:3581, cr:9.7,bc_pct:79.5,bc50:11.2,nsm:'Priya Singh'}
+];
+
+const rmData=[
+  {rm:'Rahul Verma',             nsm:'Priya Singh',    active:844574,bind:1569808,winback:48315,churn:75055,device:55465,upg:41306,cr:8.9,wr:5.7,bc_pct:85.1},
+  {rm:'Amit Sharma',  nsm:'Arjun Mehta',    active:741637,bind:1643148,winback:47616,churn:72377,device:45802,upg:39107,cr:9.8,wr:6.4,bc_pct:83.2},
+  {rm:'Sunita Rao',       nsm:'Priya Singh',    active:616419,bind:1204661,winback:29928,churn:51874,device:50353,upg:19577,cr:8.4,wr:4.9,bc_pct:84.8},
+  {rm:'Vikas Tiwari',       nsm:'Arjun Mehta',    active:436971,bind:866738, winback:19349,churn:37532,device:35796,upg:11835,cr:8.6,wr:4.4,bc_pct:80.5},
+  {rm:'Pooja Iyer',            nsm:'Ravi Kumar',  active:432345,bind:839083, winback:19043,churn:33361,device:25420,upg:13492,cr:7.7,wr:4.4,bc_pct:87.3},
+  {rm:'Manoj Dubey',           nsm:'Arjun Mehta',    active:422854,bind:792666, winback:23226,churn:38321,device:28315,upg:14736,cr:9.1,wr:5.5,bc_pct:82.9},
+  {rm:'Kavitha Reddy',            nsm:'Ravi Kumar',  active:418921,bind:1069226,winback:21659,churn:36141,device:17953,upg:16241,cr:8.6,wr:5.2,bc_pct:91.2},
+  {rm:'Dinesh Joshi',             nsm:'Neha Patel', active:326499,bind:654097, winback:14845,churn:24227,device:16109,upg:11288,cr:7.4,wr:4.5,bc_pct:86.7},
+  {rm:'Sanjay Patil', nsm:'Neha Patel', active:302024,bind:687976, winback:13737,churn:24962,device:16732,upg:9136, cr:8.3,wr:4.5,bc_pct:88.9},
+  {rm:'Anuradha Singh',     nsm:'Priya Singh',    active:269968,bind:519690, winback:14653,churn:22316,device:15811,upg:14643,cr:8.3,wr:5.4,bc_pct:83.1},
+  {rm:'Rohit Banerjee',         nsm:'Arjun Mehta',    active:257757,bind:449269, winback:10672,churn:24441,device:24213,upg:4020, cr:9.5,wr:4.1,bc_pct:79.8},
+  {rm:'Meena Tripathi',           nsm:'Arjun Mehta',    active:217044,bind:433339, winback:12507,churn:22397,device:19738,upg:8331, cr:10.3,wr:5.8,bc_pct:77.2},
+  {rm:'Sunil Krishna',                 nsm:'Suresh Nair',      active:205882,bind:397455, winback:8019, churn:14795,device:13916,upg:4221, cr:7.2,wr:3.9,bc_pct:90.3},
+  {rm:'Venkat Rao',              nsm:'Ravi Kumar',  active:194377,bind:493541, winback:12008,churn:19889,device:10762,upg:10794,cr:10.2,wr:6.2,bc_pct:75.8},
+  {rm:'Nitin Kulkarni',    nsm:'Ravi Kumar',  active:167032,bind:401360, winback:9282, churn:14532,device:10222,upg:7867, cr:8.7,wr:5.6,bc_pct:88.1},
+  {rm:'Divya Menon',             nsm:'Suresh Nair',      active:155959,bind:261951, winback:4115, churn:8970, device:6879, upg:1377, cr:5.8,wr:2.6,bc_pct:93.5},
+  {rm:'Prasad Naidu',     nsm:'Ravi Kumar',  active:153612,bind:338889, winback:8797, churn:16827,device:13541,upg:8223, cr:11.0,wr:5.7,bc_pct:76.9},
+  {rm:'Anil Bisht',             nsm:'Arjun Mehta',    active:132473,bind:264197, winback:8975, churn:14442,device:5383, upg:3299, cr:10.9,wr:6.8,bc_pct:78.5},
+  {rm:'Harish Reddy',                nsm:'Ravi Kumar',  active:125798,bind:302868, winback:7745, churn:12000,device:6675, upg:5786, cr:9.5,wr:6.2,bc_pct:80.1},
+  {rm:'Lakshmi Swamy',                 nsm:'Suresh Nair',      active:119878,bind:248000, winback:4500, churn:8800, device:6200, upg:2100, cr:7.3,wr:3.8,bc_pct:91.8}
+];
+
+/* ════ HELPERS ════ */
+const fmt=v=>v>=1e7?(v/1e7).toFixed(1)+'Cr':v>=1e5?(v/1e5).toFixed(1)+'L':v>=1e3?(v/1e3).toFixed(0)+'K':String(v);
+const num=v=>Math.round(v).toLocaleString('en-IN');
+const gc='rgba(255,255,255,0.055)';const tc='#38455a';
+const tt={backgroundColor:'#141a27',borderColor:'rgba(255,255,255,0.09)',borderWidth:1,titleColor:'#e4e9f5',bodyColor:'#7a85a0',padding:10,cornerRadius:7,displayColors:false};
+const ro={responsive:true,maintainAspectRatio:false};
+const bdg=cr=>cr>9.5?'br':cr>8?'ba':'bg';
+const bcBdg=p=>p>=90?'bg':p>=80?'bb':'br';
+
+/* ════ FILTER ════ */
+let fZone='all',fNSM='all',fState='all',fCity='all',fRM='all';
+
+function applyFilter(){
+  fZone=document.getElementById('f-zone').value;
+  fState=document.getElementById('f-state').value;
+  fCity=document.getElementById('f-city').value;
+  fNSM=document.getElementById('f-nsm').value;
+  fRM=document.getElementById('f-rm').value;
+
+  const isFiltered=fZone!=='all'||fNSM!=='all'||fState!=='all'||fCity!=='all'||fRM!=='all';
+  const badge=document.getElementById('factive-badge');
+  badge.classList.toggle('on',isFiltered);
+  if(isFiltered){
+    const parts=[];
+    if(fZone!=='all')parts.push('Zone: '+fZone);
+    if(fState!=='all')parts.push('State: '+fState);
+    if(fCity!=='all')parts.push('City: '+fCity);
+    if(fNSM!=='all')parts.push('NSM: '+fNSM.split(' ')[0]);
+    if(fRM!=='all')parts.push('RM: '+fRM.split(' ')[0]);
+    badge.textContent='⬤ '+parts.join(' · ');
+  }
+
+  // Zone table filter
+  document.querySelectorAll('#ztb tr').forEach(tr=>{
+    const zm=fZone==='all'||tr.dataset.zone===fZone;
+    const nm=fNSM==='all'||tr.dataset.nsm===fNSM;
+    tr.style.display=(zm&&nm)?'':'none';
+  });
+
+  // City table filter
+  document.querySelectorAll('#ctb tr').forEach(tr=>{
+    const nm=fNSM==='all'||tr.dataset.nsm===fNSM;
+    const cm=fCity==='all'||tr.dataset.city===fCity;
+    tr.style.display=(nm&&cm)?'':'none';
+  });
+
+  // RM table filter
+  document.querySelectorAll('#rtb tr').forEach(tr=>{
+    const nm=fNSM==='all'||tr.dataset.nsm===fNSM;
+    const rm=fRM==='all'||tr.dataset.rm===fRM;
+    tr.style.display=(nm&&rm)?'':'none';
+  });
+  updateRMcount();
+
+  // KPI card update from filtered zones
+  const filtered=zoneData.filter(z=>{
+    return (fZone==='all'||z.zone===fZone)&&(fNSM==='all'||zoneNSM[z.zone]===fNSM);
+  });
+  if(isFiltered&&filtered.length>0){
+    const a=filtered.reduce((s,z)=>s+z.active,0);
+    const b=filtered.reduce((s,z)=>s+z.bind,0);
+    const c=filtered.reduce((s,z)=>s+z.churn,0);
+    const w=filtered.reduce((s,z)=>s+z.winback,0);
+    const d=filtered.reduce((s,z)=>s+z.device,0);
+    const bc=+(filtered.reduce((s,z)=>s+z.bc_pct,0)/filtered.length).toFixed(1);
+    document.getElementById('k-active').textContent=fmt(a);
+    document.getElementById('k-bind').textContent=fmt(b);
+    document.getElementById('k-churn').textContent=fmt(c);
+    document.getElementById('k-wb').textContent=fmt(w);
+    document.getElementById('k-dev').textContent=fmt(d);
+    document.getElementById('k-bc').textContent=bc+'%';
+    document.getElementById('k-active-d').textContent='Filtered · '+filtered.length+' zone(s)';
+    document.getElementById('k-churn-d').textContent='Churn rate: '+(c/a*100).toFixed(1)+'%';
+    document.getElementById('k-bc-d').textContent='Avg broadcast success rate';
+  } else if(!isFiltered){
+    document.getElementById('k-active').textContent='75.84L';
+    document.getElementById('k-bind').textContent='1.557Cr';
+    document.getElementById('k-churn').textContent='6.67L';
+    document.getElementById('k-wb').textContent='3.85L';
+    document.getElementById('k-dev').textContent='5.05L';
+    document.getElementById('k-bc').textContent='83.1%';
+    document.getElementById('k-active-d').textContent='▲ +2.0% vs LMTD';
+    document.getElementById('k-churn-d').textContent='▼ −3.9% vs LMTD';
+    document.getElementById('k-bc-d').textContent='▼ −1.1pp vs LMTD (84.2%)';
+  }
+}
+
+function clearFilter(){
+  ['f-zone','f-state','f-city','f-nsm','f-rm'].forEach(id=>document.getElementById(id).value='all');
+  fZone=fNSM=fState=fCity=fRM='all';
+  applyFilter();
+}
+
+/* ════ TABLE SORT ════ */
+function makeSortable(tblId){
+  const tbl=document.getElementById(tblId);if(!tbl)return;
+  let sc=-1,sd=1;
+  tbl.querySelectorAll('th[data-col]').forEach((th,i)=>{
+    th.addEventListener('click',()=>{
+      sd=(sc===i)?-sd:1;sc=i;
+      tbl.querySelectorAll('th').forEach(h=>h.classList.remove('sa','sd'));
+      th.classList.add(sd===1?'sa':'sd');
+      const tb=tbl.querySelector('tbody');
+      [...tb.querySelectorAll('tr')].sort((a,b)=>{
+        const av=a.dataset[th.dataset.col]??'';
+        const bv=b.dataset[th.dataset.col]??'';
+        const an=parseFloat(av),bn=parseFloat(bv);
+        return isNaN(an)||isNaN(bn)?av.localeCompare(bv)*sd:(an-bn)*sd;
+      }).forEach(r=>tb.appendChild(r));
+    });
+  });
+}
+
+/* ════ RM SEARCH ════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  const rmq=document.getElementById('rm-q');
+  if(rmq)rmq.addEventListener('input',function(){
+    const q=this.value.toLowerCase();
+    document.querySelectorAll('#rtb tr').forEach(tr=>{
+      if(fNSM!=='all'&&tr.dataset.nsm!==fNSM){tr.style.display='none';return;}
+      tr.style.display=tr.textContent.toLowerCase().includes(q)?'':'none';
+    });
+    updateRMcount();
+  });
+});
+function updateRMcount(){
+  const v=[...document.querySelectorAll('#rtb tr')].filter(r=>r.style.display!=='none').length;
+  const el=document.getElementById('rm-cnt');if(el)el.textContent=v+' RMs';
+}
+
+/* ════ BUILD TABLES ════ */
+(function buildTables(){
+  // Zone table
+  const ztb=document.getElementById('ztb');
+  if(ztb) zoneData.forEach((z,i)=>{
+    const tr=document.createElement('tr');
+    Object.assign(tr.dataset,{zone:z.zone,nsm:zoneNSM[z.zone],active:z.active,bind:z.bind,winback:z.winback,wr:z.wr,churn:z.churn,cr:z.cr,device:z.device,ae:z.ae,bc_pct:z.bc_pct,bc50:z.bc50});
+    tr.innerHTML=`<td class="rnk">${i+1}</td><td class="fw">${z.zone}</td>
+      <td class="mono">${fmt(z.active)}</td><td class="mono">${fmt(z.bind)}</td>
+      <td class="mono">${fmt(z.winback)}</td><td class="mono">${z.wr}%</td>
+      <td class="mono">${fmt(z.churn)}</td><td><span class="bdg ${bdg(z.cr)}">${z.cr}%</span></td>
+      <td class="mono">${fmt(z.device)}</td><td><span class="bdg ${z.ae>=96?'bg':z.ae>=90?'bb':'br'}">${z.ae}%</span></td>
+      <td><span class="bdg ${bcBdg(z.bc_pct)}">${z.bc_pct}%</span></td>
+      <td><span class="bdg ${z.bc50>10?'br':z.bc50>7?'ba':'bg'}">${z.bc50}%</span></td>`;
+    ztb.appendChild(tr);
+  });
+  makeSortable('ztbl');
+
+  // City table
+  const ctb=document.getElementById('ctb');
+  if(ctb) cityData.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    Object.assign(tr.dataset,{city:c.city,nsm:c.nsm,active:c.active,bind:c.bind,winback:c.winback,churn:c.churn,cr:c.cr,device:c.device,bc_pct:c.bc_pct,bc50:c.bc50});
+    tr.innerHTML=`<td class="rnk">${i+1}</td><td class="fw">${c.city}</td>
+      <td class="mono">${num(c.active)}</td><td class="mono">${num(c.bind)}</td>
+      <td class="mono">${num(c.winback)}</td><td class="mono">${num(c.churn)}</td>
+      <td><span class="bdg ${bdg(c.cr)}">${c.cr}%</span></td>
+      <td class="mono">${num(c.device)}</td>
+      <td><span class="bdg ${bcBdg(c.bc_pct)}">${c.bc_pct}%</span></td>
+      <td><span class="bdg ${c.bc50>10?'br':c.bc50>7?'ba':'bg'}">${c.bc50}%</span></td>`;
+    ctb.appendChild(tr);
+  });
+  makeSortable('ctbl');
+
+  // RM table
+  const rtb=document.getElementById('rtb');
+  if(rtb) rmData.forEach((r,i)=>{
+    const nsm=nsmData.find(n=>n.name===r.nsm);
+    const tr=document.createElement('tr');
+    Object.assign(tr.dataset,{rm:r.rm,nsm:r.nsm,active:r.active,bind:r.bind,winback:r.winback,churn:r.churn,cr:r.cr,wr:r.wr,device:r.device,upg:r.upg,bc_pct:r.bc_pct});
+    tr.innerHTML=`<td class="rnk">${i+1}</td>
+      <td class="fw" style="font-size:12px">${r.rm}</td>
+      <td style="font-size:11px;font-weight:500;color:${nsm?nsm.col:'#888'}">${r.nsm}</td>
+      <td class="mono">${num(r.active)}</td><td class="mono">${num(r.bind)}</td>
+      <td class="mono">${num(r.winback)}</td><td class="mono">${num(r.churn)}</td>
+      <td><span class="bdg ${bdg(r.cr)}">${r.cr}%</span></td>
+      <td class="mono">${r.wr}%</td><td class="mono">${num(r.device)}</td>
+      <td class="mono">${num(r.upg)}</td>
+      <td><span class="bdg ${bcBdg(r.bc_pct)}">${r.bc_pct}%</span></td>`;
+    rtb.appendChild(tr);
+  });
+  makeSortable('rmtbl');
+
+  // NSM cards
+  const nc=document.getElementById('nc');
+  if(nc) nsmData.forEach(n=>{
+    nc.innerHTML+=`<div class="nc" style="border-top-color:${n.col}">
+      <div class="nm">${n.name}</div>
+      <div class="ns"><span class="nsl">Active Merchants</span><span class="nsv">${fmt(n.active)}</span></div>
+      <div class="ns"><span class="nsl">Device Bind Count</span><span class="nsv">${fmt(n.bind)}</span></div>
+      <div class="ns"><span class="nsl">MTD Winback</span><span class="nsv" style="color:#2bc97a">${fmt(n.winback)}</span></div>
+      <div class="ns"><span class="nsl">MTD Churn</span><span class="nsv" style="color:#f05050">${fmt(n.churn)}</span></div>
+      <div class="ns"><span class="nsl">Churn Rate</span><span class="nsv" style="color:${n.cr>9?'#f05050':'#2bc97a'}">${n.cr}%</span></div>
+      <div class="ns"><span class="nsl">Winback Rate</span><span class="nsv">${n.wr}%</span></div>
+      <div class="ns"><span class="nsl">Devices Deployed</span><span class="nsv">${fmt(n.device)}</span></div>
+      <div class="ns"><span class="nsl">Device Upgrades</span><span class="nsv">${fmt(n.upgrades)}</span></div>
+      <div class="ns"><span class="nsl">Broadcast Success</span><span class="nsv" style="color:${n.bc_pct>=90?'#2bc97a':n.bc_pct>=82?'#f0a828':'#f05050'}">${n.bc_pct}%</span></div>
+      <div class="ns"><span class="nsl">50%+ Fail Merchants</span><span class="nsv" style="color:${n.bc50>9?'#f05050':'#7a85a0'}">${n.bc50}%</span></div>
+      <div class="ns"><span class="nsl">Act. Efficiency</span><span class="nsv">${n.ae}%</span></div>
+    </div>`;
+  });
+
+  // NSM legend
+  const nl=document.getElementById('nsm-leg');
+  if(nl) nsmData.forEach(n=>{nl.innerHTML+=`<div class="li"><div class="ls" style="background:${n.col}"></div>${n.name}</div>`;});
+})();
+
+/* ════ PAGE SWITCH ════ */
+const pInit={s:false,g:false,p:false};
+function go(id,btn){
+  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.nb').forEach(x=>x.classList.remove('on'));
+  document.getElementById('p'+id).classList.add('on');
+  btn.classList.add('on');
+  if(!pInit[id]){pInit[id]=true;setTimeout(()=>inits[id](),40);}
+}
+
+/* ════ CHARTS ════ */
+const inits={
+  s:function(){
+    new Chart(document.getElementById('c1'),{type:'line',data:{labels:months,datasets:[
+      {label:'Active',data:mA,borderColor:'#4d8ef0',backgroundColor:'rgba(77,142,240,0.06)',borderWidth:2,pointRadius:3,tension:0.35,fill:true,yAxisID:'y'},
+      {label:'Churn', data:mC,borderColor:'#f05050',borderWidth:2,pointRadius:3,tension:0.35,yAxisID:'y2'},
+      {label:'Winback',data:mW,borderColor:'#2bc97a',borderWidth:2,pointRadius:3,tension:0.35,yAxisID:'y2'}
+    ]},options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,mode:'index',intersect:false,displayColors:true,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:11}}},
+    y:{position:'left',grid:{color:gc},ticks:{color:tc,font:{size:11},callback:v=>fmt(v)},title:{display:true,text:'Active',color:tc,font:{size:11}}},
+    y2:{position:'right',grid:{display:false},ticks:{color:tc,font:{size:11},callback:v=>fmt(v)},title:{display:true,text:'Churn / Winback',color:tc,font:{size:11}}}}}});
+
+    new Chart(document.getElementById('c-bc'),{type:'line',data:{labels:months,datasets:[
+      {label:'Broadcast %',data:mBcPct,borderColor:'#f0a828',backgroundColor:'rgba(240,168,40,0.07)',borderWidth:2,pointRadius:3,tension:0.35,fill:true,yAxisID:'y'},
+      {label:'50%+ Fail %',data:mBc50,borderColor:'#f07050',backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:0.35,yAxisID:'y2'}
+    ]},options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,mode:'index',intersect:false,displayColors:true,callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:11}}},
+    y:{position:'left',grid:{color:gc},ticks:{color:tc,font:{size:11},callback:v=>v+'%'},min:78,max:88,title:{display:true,text:'Broadcast %',color:tc,font:{size:11}}},
+    y2:{position:'right',grid:{display:false},ticks:{color:tc,font:{size:11},callback:v=>v+'%'},min:6,max:10,title:{display:true,text:'50%+ Fail %',color:tc,font:{size:11}}}}}});
+
+    new Chart(document.getElementById('c2'),{type:'bar',data:{labels:months,datasets:[{label:'Devices',data:mD,backgroundColor:'rgba(155,120,245,0.65)',borderColor:'#9b78f5',borderWidth:1,borderRadius:4}]},
+    options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+fmt(c.parsed.y)+' devices'}}},
+    scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10},maxRotation:45}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>fmt(v)}}}}});
+
+    new Chart(document.getElementById('c-pie1'),{type:'doughnut',data:{
+      labels:['Txn Active (4.74L)','Txn Inactive (0.10L)','Pending (0.21L)'],
+      datasets:[{data:[473758,10163,20604],backgroundColor:['rgba(43,201,122,0.85)','rgba(240,80,80,0.75)','rgba(56,64,85,0.6)'],borderColor:['#2bc97a','#f05050','#38455a'],borderWidth:2,hoverOffset:8}]},
+    options:{...ro,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#7a85a0',font:{size:11.5},padding:14}},tooltip:{...tt,callbacks:{label:c=>' '+c.label+' → '+((c.raw/504525)*100).toFixed(1)+'% of deployed'}}}}});
+
+    new Chart(document.getElementById('c-pie2'),{type:'doughnut',data:{
+      labels:['Was Txn Active (22.8K)','Was Txn Inactive (29.2K)'],
+      datasets:[{data:[22847,29210],backgroundColor:['rgba(240,168,40,0.8)','rgba(56,64,85,0.65)'],borderColor:['#f0a828','#38455a'],borderWidth:2,hoverOffset:8}]},
+    options:{...ro,cutout:'60%',plugins:{legend:{position:'right',labels:{color:'#7a85a0',font:{size:11.5},padding:14}},tooltip:{...tt,callbacks:{label:c=>' '+c.label+' → '+((c.raw/52057)*100).toFixed(1)+'% of deactivations'}}}}});
+  },
+
+  g:function(){
+    const swb=[...stateData].sort((a,b)=>b.winback-a.winback);
+    new Chart(document.getElementById('g1'),{type:'bar',data:{labels:swb.map(s=>s.s),datasets:[{label:'Winback',data:swb.map(s=>s.winback),backgroundColor:'rgba(43,201,122,0.65)',borderColor:'#2bc97a',borderWidth:1,borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+num(c.parsed.x)+' merchants winback'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:tc,font:{size:11}}}}}});
+
+    const zae=[...zoneData].sort((a,b)=>b.ae-a.ae);
+    new Chart(document.getElementById('g2'),{type:'bar',data:{labels:zae.map(z=>z.zone),datasets:[{label:'Act. Eff. %',data:zae.map(z=>z.ae),backgroundColor:zae.map(z=>z.ae>=96?'rgba(43,201,122,0.75)':z.ae>=90?'rgba(77,142,240,0.7)':'rgba(240,80,80,0.7)'),borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'% activation rate'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},min:84,max:100},y:{grid:{display:false},ticks:{color:tc,font:{size:9}}}}}});
+
+    const zbc=[...zoneData].sort((a,b)=>b.bc_pct-a.bc_pct);
+    new Chart(document.getElementById('g3'),{type:'bar',data:{labels:zbc.map(z=>z.zone),datasets:[{label:'Broadcast %',data:zbc.map(z=>z.bc_pct),backgroundColor:zbc.map(z=>z.bc_pct>=90?'rgba(43,201,122,0.72)':z.bc_pct>=80?'rgba(240,168,40,0.72)':'rgba(240,80,80,0.72)'),borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'% success'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},min:72,max:100},y:{grid:{display:false},ticks:{color:tc,font:{size:9}}}}}});
+
+    const zur=[...zoneData].sort((a,b)=>b.upg_pct-a.upg_pct);
+    new Chart(document.getElementById('g4'),{type:'bar',data:{labels:zur.map(z=>z.zone),datasets:[{label:'Upgrade %',data:zur.map(z=>z.upg_pct),backgroundColor:zur.map(z=>z.upg_pct>=4?'rgba(155,120,245,0.75)':z.upg_pct>=2.5?'rgba(77,142,240,0.65)':'rgba(56,64,85,0.6)'),borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'% of active upgraded'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},min:0,max:6.5},y:{grid:{display:false},ticks:{color:tc,font:{size:9}}}}}});
+
+    new Chart(document.getElementById('g5'),{type:'bar',data:{labels:cityData.map(c=>c.city),datasets:[{label:'Active',data:cityData.map(c=>c.active),backgroundColor:'rgba(77,142,240,0.65)',borderColor:'#4d8ef0',borderWidth:1,borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+num(c.parsed.x)+' active'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>fmt(v)}},y:{grid:{display:false},ticks:{color:tc,font:{size:10}}}}}});
+
+    const cbc=[...cityData].sort((a,b)=>b.bc_pct-a.bc_pct);
+    new Chart(document.getElementById('g6'),{type:'bar',data:{labels:cbc.map(c=>c.city),datasets:[{label:'Broadcast %',data:cbc.map(c=>c.bc_pct),backgroundColor:cbc.map(c=>c.bc_pct>=90?'rgba(43,201,122,0.72)':c.bc_pct>=82?'rgba(240,168,40,0.72)':'rgba(240,80,80,0.72)'),borderRadius:4}]},
+    options:{...ro,indexAxis:'y',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'% broadcast success'}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},min:72,max:100},y:{grid:{display:false},ticks:{color:tc,font:{size:10}}}}}});
+  },
+
+  p:function(){
+    new Chart(document.getElementById('c6'),{type:'line',data:{labels:months,datasets:nsmData.map(n=>({label:n.name,data:n.trend,borderColor:n.col,backgroundColor:'transparent',borderWidth:2,pointRadius:3,tension:0.35}))},
+    options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,mode:'index',intersect:false,displayColors:true,callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+    scales:{x:{grid:{color:gc},ticks:{color:tc,font:{size:11}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:11},callback:v=>fmt(v)}}}}});
+
+    new Chart(document.getElementById('c8'),{type:'bar',data:{labels:nsmData.map(n=>n.name.split(' ')[0]),datasets:[
+      {label:'Churn %',  data:nsmData.map(n=>n.cr), backgroundColor:'rgba(240,80,80,0.72)',borderRadius:4},
+      {label:'Winback %',data:nsmData.map(n=>n.wr), backgroundColor:'rgba(43,201,122,0.72)',borderRadius:4}
+    ]},options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,mode:'index',intersect:false,displayColors:true,callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y+'%'}}},
+    scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:11}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},max:12}}}});
+
+    new Chart(document.getElementById('c-nsm-bc'),{type:'bar',data:{labels:nsmData.map(n=>n.name.split(' ')[0]),datasets:[
+      {label:'Broadcast %',data:nsmData.map(n=>n.bc_pct),backgroundColor:'rgba(240,168,40,0.72)',borderRadius:4},
+      {label:'50%+ Fail %',data:nsmData.map(n=>n.bc50), backgroundColor:'rgba(240,112,80,0.65)',borderRadius:4}
+    ]},options:{...ro,plugins:{legend:{display:false},tooltip:{...tt,mode:'index',intersect:false,displayColors:true,callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y.toFixed(1)+'%'}}},
+    scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:11}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},max:100}}}});
+
+    const tot=nsmData.reduce((s,n)=>s+n.active,0);
+    new Chart(document.getElementById('c15'),{type:'doughnut',data:{
+      labels:nsmData.map(n=>n.name),
+      datasets:[{data:nsmData.map(n=>+(n.active/tot*100).toFixed(1)),backgroundColor:nsmData.map(n=>n.col+'cc'),borderColor:nsmData.map(n=>n.col),borderWidth:2,hoverOffset:8}]},
+    options:{...ro,cutout:'64%',plugins:{legend:{display:false},tooltip:{...tt,callbacks:{label:c=>' '+c.dataset.data[c.dataIndex]+'% · '+fmt(nsmData[c.dataIndex].active)+' active'}}}}});
+  }
+};
+
+setTimeout(()=>{pInit.s=true;inits.s();},55);
+</script>
+</body>
+</html>
