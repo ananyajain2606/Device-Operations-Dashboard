@@ -2,7 +2,7 @@
 
 An interactive operations intelligence dashboard tracking merchant activity, device deployments, churn, winback, and broadcast performance across regions and managers — built as a portfolio project.
 
-🔗 **[Live Dashboard](https://YOUR-USERNAME.github.io/merchant-ops-dashboard/)**
+🔗 **[Live Dashboard](https://ananyajain2606.github.io/Device-Operations-Dashboard/)**
 
 ---
 
